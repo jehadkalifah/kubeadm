@@ -1,0 +1,28 @@
+# It’s needed values for Helm chart
+# Namespace Values
+namespace: "develop01"
+
+# Secret Values
+spinnakerVersioned: "false"
+dockerconfigjson: eyJhdXRocyI6eyIxOTIuMTY4LjEwMC4yMjA6MzAwMDMiOnsidXNlcm5hbWUiOiJhZG1pbiIsInBhc3N3b3JkIjoiQWRtaW4yMDE4IiwiYXV0aCI6IllXUnRhVzQ2UVdSdGFXNHlNREU0In19fQ==
+
+# Deployment Values
+spinnakerVersioned: "false"
+labels: 
+  proj: "dev"
+  app: "web"
+replicas: "1"
+templateName: "nginx-template"
+containerName: "nginx"     
+image: 
+  repository: "192.168.100.220:30003/docker-registry/develop/service01"
+  pullPolicy: IfNotPresent
+  tag: ${trigger['tag']} 
+containerPort: 80
+
+# Service Values
+serviceType: "NodePort"
+port: 80
+protocol: "TCP"
+targetPort: 80
+nodePort: 32210 

@@ -1,0 +1,83 @@
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata: 
+  name: minio-local-path-pvc 
+  namespace: spinnaker
+spec: 
+  accessModes: 
+  - ReadWriteOnce 
+  resources: 
+    requests:
+      storage: 100Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio-deployment
+  namespace: spinnaker
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: minio 
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: minio/minio
+        args:
+        - server
+        # --address=127.0.0.1:9009 for one ip
+        - --address=:9009
+        - --console-address=:9010
+        - /data
+        env:
+        - name: MINIO_ACCESS_KEY
+          value: "minioaccesskey"
+        - name: MINIO_SECRET_KEY
+          value: "miniosecretkey"
+        ports:
+        - containerPort: 9009
+        volumeMounts:
+        # Spinnaker data location "front50"
+        - name: minio-vol
+          mountPath: /data
+          subPath: data
+      volumes:
+      - name: minio-vol
+        persistentVolumeClaim:
+          claimName: minio-local-path-pvc 
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+  namespace: spinnaker
+spec:
+  selector:
+    app: minio
+  ports:
+    - port: 9009
+      targetPort: 9009
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-console-service
+  namespace: spinnaker
+spec:
+  selector:
+    app: minio
+  type: NodePort  
+  ports:
+    - port: 9010
+      targetPort: 9010
+      protocol: TCP
+      nodePort: 30010

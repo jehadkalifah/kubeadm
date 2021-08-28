@@ -1,0 +1,85 @@
+apiVersion: v1
+type: kubernetes.io/dockerconfigjson
+kind: Secret
+metadata:
+  name: docker-registry-secret
+  namespace: devops-tools   
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyIxOTIuMTY4LjEwMC4yMjA6MzAwMDMiOnsidXNlcm5hbWUiOiJhZG1pbiIsInBhc3N3b3JkIjoiQWRtaW4yMDE4IiwiYXV0aCI6IllXUnRhVzQ2UVdSdGFXNHlNREU0In19fQ==
+
+---
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata: 
+  name: jenkins-local-path-pvc
+  namespace: devops-tools
+spec: 
+  accessModes: 
+  - ReadWriteOnce 
+  resources: 
+    requests:
+      storage: 100Gi
+
+---
+apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: jenkins-deploy
+  namespace: devops-tools  
+spec:
+  replicas: 1
+  selector:
+   matchLabels:
+    app: jenkins
+  template:
+   metadata:
+    name: jenkins-template
+    labels:
+     app: jenkins
+   spec:
+    imagePullSecrets:
+    - name: docker-registry-secret  
+    containers: 
+    - name: jenkins 
+      image: 192.168.100.220:30003/docker-registry/jenkins:v2
+      volumeMounts: 
+      - mountPath: "/var/jenkins_home" 
+        subPath: jenkins_home
+        name: jenkins-vol    
+      - mountPath: "/certs/client" 
+        subPath: client
+        name: jenkins-vol     
+      - mountPath: "/usr/share/jenkins/ref" 
+        subPath: share/jenkins
+        name: jenkins-vol          
+      - mountPath: "/var/run/docker.sock" 
+        name: docker-volume                          
+    volumes:
+    - name: jenkins-vol
+      persistentVolumeClaim:
+        claimName: jenkins-local-path-pvc   
+    - name: docker-volume
+      hostPath:
+        path: /var/run/docker.sock
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-svc
+  namespace: devops-tools    
+spec:
+  selector:
+    app: jenkins
+  type: NodePort	
+  ports:
+  - name: webaccess
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+    nodePort: 30004
+  - name: agentaccess
+    port: 5000
+    protocol: TCP
+    targetPort: 5000	
+    nodePort: 30005

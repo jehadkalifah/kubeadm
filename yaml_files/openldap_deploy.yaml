@@ -1,0 +1,76 @@
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata: 
+  name: openldap-local-path-pvc 
+  namespace: devops-tools
+spec: 
+  accessModes: 
+  - ReadWriteOnce 
+  resources: 
+    requests:
+      storage: 100Gi
+
+---
+apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: openldap 
+  namespace: devops-tools 
+spec: 
+  replicas: 1 
+  selector: 
+    matchLabels: 
+     app: openldap 
+  template: 
+    metadata: 
+     name: openldap-template 
+     labels: 
+      app: openldap 
+    spec: 
+     containers: 
+     - name: openldap 
+       image: bitnami/openldap:2.4.59-debian-10-r30
+       env:
+       - name: LDAP_PORT_NUMBER
+         value: "1389"  
+       - name: LDAP_ROOT
+         value: "dc=devops,dc=local"         
+       - name: LDAP_ADMIN_USERNAME
+         value: "admin"
+       - name: LDAP_ADMIN_PASSWORD
+         value: "Admin2018"
+       - name: LDAP_USERS
+         value: "root,spinnaker"
+       - name: LDAP_PASSWORDS
+         value: "Admin2018,Admin2018"   
+       - name: LDAP_USER_DC
+         value: "users"
+       - name: LDAP_GROUP
+         value: "groups"                             
+       volumeMounts: 
+       - name: openldap-vol 
+         mountPath: /bitnami/openldap     
+     volumes:
+     - name: openldap-vol
+       persistentVolumeClaim:
+         claimName: openldap-local-path-pvc
+
+---
+apiVersion: v1 
+kind: Service 
+metadata: 
+  name: openldap-svc 
+  namespace: devops-tools 
+spec: 
+  selector: 
+   app: openldap 
+  type: ClusterIP
+  ports: 
+  - name: openldapport01 
+    port: 389 
+    protocol: TCP 
+    targetPort: 1389   
+  - name: openldapport02 
+    port: 636 
+    protocol: TCP 
+    targetPort: 1636             

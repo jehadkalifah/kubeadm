@@ -1,0 +1,14 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: freenas-test-pvc
+spec:
+  storageClassName: freenas-nfs
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      # Apparently, around feb20, changes have been incorporated into FreeNAS
+      # disallowing quotas smaller than 1Gi, github.com/freenas/webui/pull/3613
+      storage: 1Gi

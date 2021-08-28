@@ -1,0 +1,65 @@
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata: 
+  name: gitlab-local-path-pvc 
+  namespace: devops-tools
+spec: 
+  accessModes: 
+  - ReadWriteOnce 
+  resources: 
+    requests:
+      storage: 100Gi
+
+---
+apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: gitlab 
+  namespace: devops-tools 
+spec: 
+  replicas: 1 
+  selector: 
+    matchLabels: 
+     app: gitlab 
+  template: 
+    metadata: 
+     name: gitlab-template 
+     labels: 
+      app: gitlab 
+    spec: 
+     containers: 
+     - name: gitlab 
+       image: gitlab/gitlab-ce:13.12.10-ce.0
+       ports: 
+       - containerPort: 80 
+       volumeMounts: 
+       - name: gitlab-vol 
+         mountPath: /var/opt/gitlab
+         subPath: opt/gitlab
+       - name: gitlab-vol 
+         mountPath: /var/log/gitlab
+         subPath: log/gitlab
+       - name: gitlab-vol 
+         mountPath: /etc/gitlab  
+         subPath: gitlab          
+     volumes:
+     - name: gitlab-vol
+       persistentVolumeClaim:
+         claimName: gitlab-local-path-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitlab-svc
+  namespace: devops-tools
+spec:
+  selector:
+   app: gitlab
+  type: NodePort
+  ports:
+  - name: gitlabport
+    port: 80
+    protocol: TCP
+    targetPort: 80
+    nodePort: 30001

@@ -1,0 +1,22 @@
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: freenas-test-iscsi-pod
+spec:
+  containers:
+  - name: freenas-test-isci-pod
+    image: gcr.io/google_containers/busybox:1.24
+    command:
+      - "/bin/sh"
+      - "-c"
+      - "--"
+    args: [ "date >> /mnt/file.log && while true; do sleep 30; done;" ]
+    volumeMounts:
+      - name: freenas-test-volume
+        mountPath: "/mnt"
+  restartPolicy: "Never"
+  volumes:
+    - name: freenas-test-volume
+      persistentVolumeClaim:
+        claimName: freenas-test-iscsi-pvc
